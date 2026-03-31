@@ -1,0 +1,14 @@
+{
+  "name": "faceimpose",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Face similarity matching — capture from webcam, compare against an archive of face images",
+  "scripts": {
+    "start": "node server.js",
+    "download-models": "bash download-models.sh"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "face-api.js": "^0.22.2"
+  }
+}

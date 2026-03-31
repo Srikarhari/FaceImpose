@@ -1,0 +1,166 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: #0f0f0f;
+  color: #e0e0e0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+header {
+  text-align: center;
+  padding: 2rem 1rem 1rem;
+}
+
+header h1 {
+  font-size: 1.8rem;
+  color: #fff;
+}
+
+.subtitle {
+  color: #888;
+  font-size: 0.9rem;
+  margin-top: 0.25rem;
+}
+
+main {
+  width: 100%;
+  max-width: 800px;
+  padding: 0 1rem 2rem;
+}
+
+/* ── Side-by-side comparison ── */
+
+.comparison {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.panel-label {
+  font-size: 0.85rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.image-container {
+  width: 320px;
+  height: 240px;
+  background: #1a1a1a;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid #333;
+}
+
+.image-container video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+}
+
+.image-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ── Similarity bar ── */
+
+.similarity-section {
+  margin: 1rem auto 1.5rem;
+  max-width: 660px;
+}
+
+.similarity-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.match-filename {
+  font-size: 0.85rem;
+  color: #aaa;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 70%;
+}
+
+.similarity-pct {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.similarity-bar {
+  height: 12px;
+  background: #222;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.similarity-bar .fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.4s ease;
+}
+
+/* ── Actions ── */
+
+.actions {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+#capture-btn {
+  padding: 0.75rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  background: #3b82f6;
+  color: #fff;
+  transition: background 0.2s;
+}
+
+#capture-btn:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+#capture-btn:disabled {
+  background: #333;
+  color: #666;
+  cursor: not-allowed;
+}
+
+/* ── Status ── */
+
+.status {
+  text-align: center;
+  padding: 0.75rem;
+  color: #aaa;
+  font-size: 0.9rem;
+}
+
+.status.error {
+  color: #ef4444;
+}

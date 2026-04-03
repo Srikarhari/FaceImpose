@@ -3,13 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FaceImpose</title>
+  <title>Archival Twin Finder</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header>
-    <h1>FaceImpose</h1>
-    <p class="subtitle">Face similarity matching</p>
+    <h1>Archival Twin Finder</h1>
   </header>
 
   <main>
@@ -31,17 +30,12 @@
     </section>
 
     <div id="similarity-section" class="similarity-section" style="display:none;">
-      <div class="similarity-label">
-        <span id="match-filename" class="match-filename"></span>
-        <span id="similarity-pct" class="similarity-pct"></span>
-      </div>
-      <div class="similarity-bar">
-        <div id="similarity-fill" class="fill"></div>
-      </div>
+      <div id="match-filename" class="match-filename"></div>
+      <div id="gauges-grid" class="gauges-grid"></div>
     </div>
 
     <div class="actions">
-      <button id="capture-btn" disabled>Capture &amp; Match</button>
+      <button id="capture-btn" disabled>Find Twin</button>
     </div>
 
     <div id="status" class="status">Loading models...</div>

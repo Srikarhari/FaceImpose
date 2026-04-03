@@ -6,6 +6,7 @@ const app = express();
 const PORT = 3000;
 const ARCHIVE_DIR = process.env.ARCHIVE_DIR || path.join(__dirname, 'archive');
 const MODELS_DIR = path.join(__dirname, 'models');
+const LATEST_IMAGE_DIR = path.join(__dirname, 'Latest_image');
 const IMAGE_EXTS = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp']);
 
 // Startup validation
@@ -19,6 +20,13 @@ if (!fs.existsSync(MODELS_DIR) || !fs.readdirSync(MODELS_DIR).some(f => f.endsWi
 if (!fs.existsSync(ARCHIVE_DIR)) {
   fs.mkdirSync(ARCHIVE_DIR, { recursive: true });
 }
+
+// Ensure Latest_image directory exists
+if (!fs.existsSync(LATEST_IMAGE_DIR)) {
+  fs.mkdirSync(LATEST_IMAGE_DIR, { recursive: true });
+}
+
+app.use(express.json());
 
 // Static routes
 app.use(express.static(path.join(__dirname, 'public')));
@@ -57,6 +65,30 @@ app.get('/api/archive', (req, res) => {
   }
 
   res.json(images);
+});
+
+// API: save latest matched image
+app.post('/api/save-latest', (req, res) => {
+  const { filename } = req.body;
+  if (!filename) {
+    return res.status(400).json({ error: 'Missing filename' });
+  }
+
+  // Prevent path traversal
+  const safeName = path.basename(filename);
+  const srcPath = path.join(ARCHIVE_DIR, safeName);
+  const destPath = path.join(LATEST_IMAGE_DIR, 'latest_match.jpg');
+
+  if (!fs.existsSync(srcPath)) {
+    return res.status(404).json({ error: 'Source image not found' });
+  }
+
+  try {
+    fs.copyFileSync(srcPath, destPath);
+    res.json({ ok: true, saved: destPath });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to save image' });
+  }
 });
 
 app.listen(PORT, () => {

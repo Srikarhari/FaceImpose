@@ -1,0 +1,24 @@
+[project]
+name = "archival-twin-backend"
+version = "0.1.0"
+description = "Backend for the Archival Twin art installation"
+requires-python = ">=3.10"
+
+# TODO: Pin exact versions before deployment
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "python-multipart",
+    "pydantic-settings",
+    "aiosqlite",
+    "numpy",
+    "opencv-python-headless",
+    "deepface",
+    "tf-keras",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "httpx",
+]

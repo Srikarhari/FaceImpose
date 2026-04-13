@@ -2,3 +2,54 @@ node_modules/
 models/
 archive/
 Latest_image/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Environment
+.env
+.env.local
+
+# OS
+.DS_Store
+._*
+Thumbs.db
+
+# Data / generated
+*.db
+*.db-shm
+*.db-wal
+*.db.bak-*
+*.db-shm.bak-*
+*.db-wal.bak-*
+Latest_match/
+
+# Archives / screenshots at root
+*.zip
+*.png
+*.jpg
+
+# Build output
+frontend/dist/
+*.tsbuildinfo
+*.tsbuildinfo.bak
+
+# IDE
+.vscode/
+.idea/
+
+# v2 large assets (images tracked via .gitkeep only)
+archival-twin-v2/Faces_FullArchive/**/*.png
+archival-twin-v2/Faces_FullArchive/**/*.jpg
+archival-twin-v2/Faces_FullArchive/**/*.jpeg
+archival-twin-v2/Latest_match/
+
+# InsightFace model cache
+.insightface/
+
+# Backup directories
+archival-twin-v2-backup-*/

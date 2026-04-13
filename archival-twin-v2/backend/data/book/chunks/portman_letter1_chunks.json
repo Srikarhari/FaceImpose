@@ -1,0 +1,20 @@
+[
+  {
+    "id": "portman_letter1::0000",
+    "source_file": "portman_letter1.txt",
+    "chunk_index": 0,
+    "text": "At the end of the Man correspondence is a single typewritten letter from Maurice Vidal Portman:\n\nPort Blair. Andaman Islands. INDIA\n\n24th January. 1899.\n\nDear Dr. Tylor\n\nI send you by this mail a copy of my \"Notes on the Languages of the South Andaman Group of Tribes\", [1] which has just been published by the Government of India. It forms part of the Record of the Andamanese I am making for the British Museum.\n\nMan is very much hurt at the way he thinks I have criticised him, although I allowed him to see the M.S.S. and publish a Note, and he will not understand that I criticise more the use Mr. Ellis made of his writings than what Man actually wrote. [2]\n\nAt the same time, after nearly 20 years experience with the Andamanese, I adhere to my opinion that much of the Notes on their Anthropology published by Man is incorrect, and the language he knew was a hotch-potch of three or four dialects. His work is chiefly written on the information of a few boys of different tribes, and two convict Jemadars. This is not my idea of accurate scientific research, and the results, though good for 1881, will not do for 1899.\n\nI have the \"History of our relations with the Andamanese\" [1] in the Government Press, a large work which given nearly everything of importance which has ever been written or done with the people; here again I have criticised the writings and actions of others freely, though I hope not viciously.",
+    "word_count": 258,
+    "section": null,
+    "page": null
+  },
+  {
+    "id": "portman_letter1::0001",
+    "source_file": "portman_letter1.txt",
+    "chunk_index": 1,
+    "text": "I have the \"History of our relations with the Andamanese\" [1] in the Government Press, a large work which given nearly everything of importance which has ever been written or done with the people; here again I have criticised the writings and actions of others freely, though I hope not viciously.\n\nYours sincerely\n\nMV Portman",
+    "word_count": 55,
+    "section": null,
+    "page": null
+  }
+]

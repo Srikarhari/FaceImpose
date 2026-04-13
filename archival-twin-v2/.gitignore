@@ -1,0 +1,61 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+.venv/
+venv/
+env/
+*.whl
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Build output
+frontend/dist/
+out/
+
+# Environment
+.env
+.env.local
+.env.production
+
+# Data (user-provided, not tracked)
+Faces_FullArchive/**/*.jpg
+Faces_FullArchive/**/*.jpeg
+Faces_FullArchive/**/*.png
+Faces_FullArchive/**/*.webp
+Faces_FullArchive/**/*.bmp
+Faces_FullArchive/**/*.json
+Faces_FullArchive/**/*.csv
+Latest_match/
+backend/data/*.db
+
+# InsightFace model cache
+.insightface/
+
+# OS files — macOS
+.DS_Store
+._*
+
+# OS files — Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+backend/data/*
+!backend/data/book/

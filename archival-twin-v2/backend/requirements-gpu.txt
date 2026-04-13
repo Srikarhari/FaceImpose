@@ -1,0 +1,10 @@
+# Archival Twin — Backend (NVIDIA GPU / Windows deployment)
+fastapi
+uvicorn[standard]
+python-multipart
+pydantic-settings
+aiosqlite
+numpy
+opencv-python-headless
+deepface
+tf-keras

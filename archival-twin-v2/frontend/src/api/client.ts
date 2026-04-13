@@ -74,3 +74,19 @@ export async function postVoiceAuto(metadata: {
   });
   return res.json();
 }
+
+// --- v2: TTS ---
+
+export async function fetchTTSAudio(text: string): Promise<Blob | null> {
+  try {
+    const res = await fetch(`${BASE}/api/tts/speak`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+    if (!res.ok) return null;
+    return res.blob();
+  } catch {
+    return null;
+  }
+}

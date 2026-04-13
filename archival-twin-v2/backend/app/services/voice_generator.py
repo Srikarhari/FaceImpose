@@ -124,9 +124,7 @@ def _fallback_response(metadata: dict, passages: list[dict]) -> str:
 
     return (
         f"The archival record associates {title} with the following passage "
-        f"from {source}:\n\n\"{excerpt}\"\n\n"
-        f"[This summary was generated automatically. No LLM API key is configured. "
-        f"Set ANTHROPIC_API_KEY for richer grounded responses.]"
+        f"from {source}:\n\n\"{excerpt}\""
     )
 
 
@@ -147,10 +145,7 @@ def generate_voice(
     """
     _ensure_client()
 
-    disclaimer = (
-        "This response was constructed from archival source text by an AI system. "
-        "It is not a historical quotation unless explicitly marked as such."
-    )
+    disclaimer = "Constructed from archival text"
 
     if not _api_available or _client is None:
         return {

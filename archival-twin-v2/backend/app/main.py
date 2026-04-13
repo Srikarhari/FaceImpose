@@ -84,12 +84,14 @@ from app.routes.archive import router as archive_router
 from app.routes.match import router as match_router
 from app.routes.retrieval import router as retrieval_router
 from app.routes.voice import router as voice_router
+from app.routes.tts import router as tts_router
 
 app.include_router(health_router)
 app.include_router(archive_router)
 app.include_router(match_router)
 app.include_router(retrieval_router)
 app.include_router(voice_router)
+app.include_router(tts_router)
 
 # Serve frontend static build if it exists
 frontend_dist = PROJECT_ROOT / "frontend" / "dist"

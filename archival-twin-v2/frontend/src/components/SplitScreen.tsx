@@ -43,12 +43,17 @@ export default function SplitScreen({
   const matchData: MatchResponse | null = isMatched ? matchState.data : null;
   const snapshot: string | null = isMatched ? matchState.snapshot : null;
 
-  const { speaking, toggle: toggleSpeech, stop: stopSpeech } = useSpeech();
+  const preloadText = isMatched ? voiceResult?.generated_text ?? null : null;
+  const { speaking, toggle: toggleSpeech, invalidate: invalidateSpeech } = useSpeech(preloadText);
 
-  // Stop speech on reset
+  // Invalidate + stop on reset or new capture
   const handleReset = () => {
-    stopSpeech();
+    invalidateSpeech();
     onReset();
+  };
+  const handleCapture = () => {
+    invalidateSpeech();
+    onCapture();
   };
 
   return (
@@ -119,7 +124,7 @@ export default function SplitScreen({
                   opacity: cameraReady && !isDegraded ? 1 : 0.3,
                 }}
                 disabled={!cameraReady || isDegraded}
-                onClick={onCapture}
+                onClick={handleCapture}
               >
                 FIND TWIN
               </button>
@@ -131,7 +136,7 @@ export default function SplitScreen({
               <button
                 style={{ ...captureBtn, opacity: cameraReady ? 1 : 0.3 }}
                 disabled={!cameraReady}
-                onClick={onCapture}
+                onClick={handleCapture}
               >
                 FIND TWIN
               </button>

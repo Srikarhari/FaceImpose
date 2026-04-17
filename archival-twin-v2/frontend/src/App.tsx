@@ -6,7 +6,14 @@ import { useVoice } from "./hooks/useVoice";
 import { getHealth } from "./api/client";
 
 export default function App() {
-  const { videoRef, ready: cameraReady, error: cameraError, captureFrame } = useCamera();
+  const {
+    videoRef,
+    ready: cameraReady,
+    error: cameraError,
+    starting: cameraStarting,
+    start: startCamera,
+    captureFrame,
+  } = useCamera();
   const { state: matchState, runMatch, reset } = useMatch();
   const [backendStatus, setBackendStatus] = useState<string>("checking");
 
@@ -42,6 +49,8 @@ export default function App() {
       videoRef={videoRef}
       cameraReady={cameraReady}
       cameraError={cameraError}
+      cameraStarting={cameraStarting}
+      onStartCamera={startCamera}
       matchState={matchState}
       backendStatus={backendStatus}
       onCapture={handleCapture}

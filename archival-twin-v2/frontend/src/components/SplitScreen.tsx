@@ -14,6 +14,8 @@ interface Props {
   videoRef: RefObject<HTMLVideoElement | null>;
   cameraReady: boolean;
   cameraError: CameraError;
+  cameraStarting: boolean;
+  onStartCamera: () => void;
   matchState: MatchState;
   backendStatus: string;
   onCapture: () => void;
@@ -27,6 +29,8 @@ export default function SplitScreen({
   videoRef,
   cameraReady,
   cameraError,
+  cameraStarting,
+  onStartCamera,
   matchState,
   backendStatus,
   onCapture,
@@ -57,7 +61,7 @@ export default function SplitScreen({
   };
 
   return (
-    <div style={shell}>
+    <div className="av-shell" style={shell}>
       {/* Image panels */}
       <div style={panels}>
         <VisitorPanel
@@ -71,9 +75,9 @@ export default function SplitScreen({
       </div>
 
       {/* Bottom bar: voice text | controls | retrieved text */}
-      <div style={bottomBar}>
+      <div className="av-bottom-bar" style={bottomBar}>
         {/* Left: generated voice */}
-        <div style={textPane}>
+        <div className="av-text-pane" style={textPane}>
           {isMatched && voiceResult?.generated_text && (
             <>
               <div style={paneLabelRow}>
@@ -104,7 +108,7 @@ export default function SplitScreen({
         </div>
 
         {/* Center: controls */}
-        <div style={controlArea}>
+        <div className="av-controls" style={controlArea}>
           {isDegraded && matchState.phase === "idle" && (
             <p style={degradedHint}>
               The classification engine is offline. Camera and interface remain active.
@@ -118,16 +122,27 @@ export default function SplitScreen({
           {matchState.phase === "idle" && !isUnreachable && (
             <>
               {!isDegraded && <p style={hint}>{IDLE_SUBTITLE}</p>}
-              <button
-                style={{
-                  ...captureBtn,
-                  opacity: cameraReady && !isDegraded ? 1 : 0.3,
-                }}
-                disabled={!cameraReady || isDegraded}
-                onClick={handleCapture}
-              >
-                FIND TWIN
-              </button>
+              {!cameraReady && !cameraError && (
+                <button
+                  style={{ ...captureBtn, opacity: cameraStarting ? 0.5 : 1 }}
+                  disabled={cameraStarting}
+                  onClick={onStartCamera}
+                >
+                  {cameraStarting ? "STARTING…" : "START CAMERA"}
+                </button>
+              )}
+              {cameraReady && (
+                <button
+                  style={{
+                    ...captureBtn,
+                    opacity: !isDegraded ? 1 : 0.3,
+                  }}
+                  disabled={isDegraded}
+                  onClick={handleCapture}
+                >
+                  FIND TWIN
+                </button>
+              )}
             </>
           )}
           {isProcessing && <p style={hint}>{PROCESSING_TEXT}</p>}
@@ -148,7 +163,7 @@ export default function SplitScreen({
         </div>
 
         {/* Right: retrieved archival text */}
-        <div style={textPane}>
+        <div className="av-text-pane" style={textPane}>
           {isMatched && voiceResult && voiceResult.passages.length > 0 && (
             <>
               <span style={paneLabel}>RETRIEVED ARCHIVAL TEXT</span>
@@ -194,16 +209,24 @@ export default function SplitScreen({
               ? "camera_denied"
               : cameraError === "not_found"
                 ? "camera_not_found"
-                : "camera_error"
+                : cameraError === "insecure_context"
+                  ? "camera_insecure_context"
+                  : cameraError === "unsupported"
+                    ? "camera_unsupported"
+                    : "camera_error"
           }
           detail={
             cameraError === "denied"
-              ? "Camera access was denied. Allow camera access in your browser settings."
+              ? "Camera access was denied. Allow camera access in your browser settings, then tap START CAMERA again."
               : cameraError === "not_found"
                 ? "No camera found on this device."
-                : "Could not access camera."
+                : cameraError === "insecure_context"
+                  ? "iPad Safari blocks camera on http:// LAN addresses. Open this page over HTTPS (or via localhost on the host Mac)."
+                  : cameraError === "unsupported"
+                    ? "This browser does not expose camera APIs. Try Safari or Chrome with an up-to-date version."
+                    : "Could not access camera. Tap START CAMERA to try again."
           }
-          onDismiss={() => {}}
+          onDismiss={onStartCamera}
         />
       )}
 
@@ -252,6 +275,8 @@ const bottomBar: React.CSSProperties = {
 const textPane: React.CSSProperties = {
   padding: "10px 16px",
   overflowY: "auto",
+  overflowX: "hidden",
+  minWidth: 0,
   display: "flex",
   flexDirection: "column",
   gap: 6,
@@ -291,6 +316,7 @@ const voiceText: React.CSSProperties = {
   lineHeight: 1.55,
   color: "var(--color-text)",
   whiteSpace: "pre-wrap",
+  overflowWrap: "anywhere",
 };
 
 const disclaimer: React.CSSProperties = {
@@ -333,6 +359,7 @@ const passageText: React.CSSProperties = {
   lineHeight: 1.5,
   color: "var(--color-text)",
   whiteSpace: "pre-wrap",
+  overflowWrap: "anywhere",
 };
 
 const passageMeta: React.CSSProperties = {
@@ -345,14 +372,18 @@ const passageMeta: React.CSSProperties = {
 };
 
 const controlArea: React.CSSProperties = {
+  position: "relative",
+  zIndex: 2,
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
   justifyContent: "center",
   gap: 8,
   padding: "10px 24px",
+  minWidth: 180,
   borderLeft: "1px solid #222",
   borderRight: "1px solid #222",
+  background: "var(--color-surface)",
 };
 
 const degradedHint: React.CSSProperties = {

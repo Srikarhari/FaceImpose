@@ -57,5 +57,6 @@ $RECYCLE.BIN/
 *.swp
 *.swo
 *~
-backend/data/*
+backend/data/
 !backend/data/book/
+!backend/data/book/**/.gitkeep

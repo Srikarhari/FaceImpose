@@ -84,28 +84,3 @@ export interface RetrievalStatusResponse {
   total_chunks: number;
   sources: string[];
 }
-
-// --- v2: voice generation ---
-
-export interface VoicePassage {
-  text: string;
-  source_file: string;
-  score: number;
-  section: string | null;
-  page: number | null;
-}
-
-export interface VoiceResponse {
-  generated_text: string;
-  mode: "api" | "fallback";
-  grounded: boolean;
-  disclaimer: string;
-  query_used: string | null;
-  passages: VoicePassage[];
-  error: string | null;
-}
-
-export interface VoiceStatusResponse {
-  api_available: boolean;
-  retrieval_ready: boolean;
-}

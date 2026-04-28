@@ -5,6 +5,8 @@ These endpoints are additive — they do not modify the existing
 face-match flow.
 """
 
+from __future__ import annotations
+
 import logging
 from fastapi import APIRouter
 from pydantic import BaseModel

@@ -1,68 +1,44 @@
 import { useRef, useState, useCallback, useEffect } from "react";
 
-export type CameraError =
-  | "denied"
-  | "not_found"
-  | "insecure_context"
-  | "unsupported"
-  | "unknown"
-  | null;
+export type CameraError = "denied" | "not_found" | "unknown" | null;
 
 export function useCamera() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<CameraError>(null);
-  const [starting, setStarting] = useState(false);
-
-  const start = useCallback(async () => {
-    setError(null);
-
-    // iOS Safari exposes mediaDevices only in secure contexts (HTTPS or localhost).
-    // On a LAN IP over HTTP, navigator.mediaDevices is undefined — surface that clearly.
-    if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
-      const secure = typeof window !== "undefined" && window.isSecureContext;
-      console.error(
-        "[camera] getUserMedia not available.",
-        { isSecureContext: secure, protocol: window.location.protocol, host: window.location.host },
-      );
-      setError(secure ? "unsupported" : "insecure_context");
-      return;
-    }
-
-    setStarting(true);
-    try {
-      console.log("[camera] requesting getUserMedia…");
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
-        audio: false,
-      });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        // iOS Safari needs play() to resolve from a user gesture; start() is called from one.
-        try {
-          await videoRef.current.play();
-        } catch (playErr) {
-          console.warn("[camera] video.play() rejected (will rely on autoPlay):", playErr);
-        }
-      }
-      setReady(true);
-      console.log("[camera] stream acquired.");
-    } catch (err: unknown) {
-      const name = err instanceof DOMException ? err.name : "";
-      const message = err instanceof Error ? err.message : String(err);
-      console.error("[camera] getUserMedia failed:", name, message, err);
-      if (name === "NotAllowedError" || name === "SecurityError") setError("denied");
-      else if (name === "NotFoundError" || name === "OverconstrainedError") setError("not_found");
-      else setError("unknown");
-    } finally {
-      setStarting(false);
-    }
-  }, []);
 
   useEffect(() => {
+    let cancelled = false;
+
+    async function start() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false,
+        });
+        if (cancelled) {
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+        setReady(true);
+      } catch (err: unknown) {
+        if (cancelled) return;
+        const name = err instanceof DOMException ? err.name : "";
+        if (name === "NotAllowedError") setError("denied");
+        else if (name === "NotFoundError") setError("not_found");
+        else setError("unknown");
+      }
+    }
+
+    start();
+
     return () => {
+      cancelled = true;
       streamRef.current?.getTracks().forEach((t) => t.stop());
     };
   }, []);
@@ -79,5 +55,5 @@ export function useCamera() {
     return canvas.toDataURL("image/jpeg", 0.85);
   }, []);
 
-  return { videoRef, ready, error, starting, start, captureFrame };
+  return { videoRef, ready, error, captureFrame };
 }

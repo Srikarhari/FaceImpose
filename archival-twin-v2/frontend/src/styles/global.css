@@ -36,31 +36,6 @@ body,
   -webkit-font-smoothing: antialiased;
 }
 
-/* Mobile / iPad only. Desktop layout above is untouched.
-   Only unlocks the hard 100dvh viewport lock so the page can scroll when
-   the post-match content exceeds the viewport. The 3-column bottom bar,
-   internal text-pane scrolling, and centered controls column are all
-   preserved from desktop. */
-@media (max-width: 1024px) {
-  html,
-  body,
-  #root {
-    height: auto !important;
-    min-height: 100dvh;
-    overflow-x: hidden;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  .av-shell {
-    height: auto !important;
-    min-height: 100dvh;
-    overflow: visible !important;
-  }
-  .av-controls {
-    transform: translateY(-14px);
-  }
-}
-
 button {
   font-family: var(--font-mono);
   cursor: pointer;

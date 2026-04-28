@@ -54,11 +54,10 @@ async def lifespan(app: FastAPI):
         logger.info("BookRetriever: no chunks found yet (add book text to backend/data/book/raw/)")
 
     # Inject into route modules
-    from app.routes import health, match, retrieval, voice
+    from app.routes import health, match, retrieval
     health.set_dependencies(engine, matcher)
     match.set_dependencies(engine, matcher)
     retrieval.set_dependencies(retriever)
-    voice.set_dependencies(retriever)
 
     yield
 
@@ -83,15 +82,11 @@ from app.routes.health import router as health_router
 from app.routes.archive import router as archive_router
 from app.routes.match import router as match_router
 from app.routes.retrieval import router as retrieval_router
-from app.routes.voice import router as voice_router
-from app.routes.tts import router as tts_router
 
 app.include_router(health_router)
 app.include_router(archive_router)
 app.include_router(match_router)
 app.include_router(retrieval_router)
-app.include_router(voice_router)
-app.include_router(tts_router)
 
 # Serve frontend static build if it exists
 frontend_dist = PROJECT_ROOT / "frontend" / "dist"

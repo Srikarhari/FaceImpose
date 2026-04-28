@@ -1,114 +1,65 @@
 /**
- * ArchivalVoicePanel — v2 retrieval + grounded voice panel.
+ * ArchivalVoicePanel — v2 retrieval test panel.
  *
- * Two modes:
- * 1. Auto mode: triggered when a face match succeeds (matchData prop)
- *    - Automatically retrieves archival text and generates a voice response
- * 2. Manual mode: user types a query and searches
+ * Floating bottom-right drawer that does NOT touch SplitScreen layout.
+ * Toggles between a collapsed header bar and an expanded search panel.
  *
- * Shows clearly separated sections:
- * - Retrieved archival excerpts
- * - Generated voice response (with disclaimer)
+ * Purely additive: this component lives alongside <SplitScreen /> in App.tsx
+ * via a fragment, so the existing face-match interface is unaffected.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   getRetrievalStatus,
   postRetrievalSearch,
-  postVoiceAuto,
 } from "../api/client";
 import type {
   RetrievalHit,
   RetrievalStatusResponse,
-  VoicePassage,
-  VoiceResponse,
 } from "../api/types";
-import type { MatchResponse } from "../api/types";
 
-interface Props {
-  matchData?: MatchResponse | null;
-}
-
-export default function ArchivalVoicePanel({ matchData }: Props) {
+export default function ArchivalVoicePanel() {
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<RetrievalStatusResponse | null>(null);
-
-  // Manual search state
   const [query, setQuery] = useState("");
-  const [manualResults, setManualResults] = useState<RetrievalHit[]>([]);
-  const [manualLoading, setManualLoading] = useState(false);
-  const [manualError, setManualError] = useState<string | null>(null);
-
-  // Auto voice state
-  const [voiceResult, setVoiceResult] = useState<VoiceResponse | null>(null);
-  const [voiceLoading, setVoiceLoading] = useState(false);
-  const [voiceError, setVoiceError] = useState<string | null>(null);
-  const lastMatchId = useRef<number | null>(null);
-
-  // Tab: "auto" (after match) or "manual" (search)
-  const [tab, setTab] = useState<"auto" | "manual">("auto");
+  const [results, setResults] = useState<RetrievalHit[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Fetch retrieval status once on mount
   useEffect(() => {
     let cancelled = false;
     getRetrievalStatus()
-      .then((s) => { if (!cancelled) setStatus(s); })
-      .catch(() => { if (!cancelled) setStatus({ ready: false, total_chunks: 0, sources: [] }); });
-    return () => { cancelled = true; };
+      .then((s) => {
+        if (!cancelled) setStatus(s);
+      })
+      .catch(() => {
+        if (!cancelled) setStatus({ ready: false, total_chunks: 0, sources: [] });
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  // Auto-trigger retrieval + voice after a new match
-  useEffect(() => {
-    if (!matchData?.twin) return;
-    const mid = matchData.twin.match_id;
-    if (mid === lastMatchId.current) return;
-    lastMatchId.current = mid;
-
-    setOpen(true);
-    setTab("auto");
-    setVoiceLoading(true);
-    setVoiceError(null);
-    setVoiceResult(null);
-
-    const twin = matchData.twin;
-    postVoiceAuto({
-      filename: twin.filename,
-      title: twin.metadata.title,
-      generated_caption: twin.generated_caption,
-      source_collection: twin.metadata.source_collection,
-      place_text: twin.metadata.place_text,
-      date_text: twin.metadata.date_text,
-      original_caption: twin.original_caption,
-    })
-      .then((res) => {
-        setVoiceResult(res);
-      })
-      .catch((err) => {
-        setVoiceError(err instanceof Error ? err.message : "Voice generation failed");
-      })
-      .finally(() => setVoiceLoading(false));
-  }, [matchData]);
-
-  // Manual search handler
   const handleSearch = async () => {
     const q = query.trim();
     if (!q) return;
-    setManualLoading(true);
-    setManualError(null);
+    setLoading(true);
+    setError(null);
     try {
       const res = await postRetrievalSearch(q, 5);
       if (!res.success) {
-        setManualError("Retrieval index not ready. Run process_book.py first.");
-        setManualResults([]);
+        setError("Retrieval index not ready. Run process_book.py first.");
+        setResults([]);
       } else {
-        setManualResults(res.results);
-        if (res.results.length === 0) setManualError("No matches.");
+        setResults(res.results);
+        if (res.results.length === 0) setError("No matches.");
       }
     } catch (err: unknown) {
-      setManualError(err instanceof Error ? err.message : "Search failed");
-      setManualResults([]);
+      setError(err instanceof Error ? err.message : "Search failed");
+      setResults([]);
     } finally {
-      setManualLoading(false);
+      setLoading(false);
     }
   };
 
@@ -126,7 +77,6 @@ export default function ArchivalVoicePanel({ matchData }: Props) {
           {status?.ready
             ? `${status.total_chunks} chunks · ${status.sources.length} sources`
             : "index empty"}
-          {voiceResult ? " · voice ready" : ""}
         </span>
         <span style={{ marginLeft: 4 }}>▲</span>
       </button>
@@ -135,7 +85,7 @@ export default function ArchivalVoicePanel({ matchData }: Props) {
 
   // -------------------- Expanded drawer --------------------
   return (
-    <section style={drawer} aria-label="Archival voice panel">
+    <section style={drawer} aria-label="Archival voice retrieval test">
       {/* Header */}
       <header style={drawerHeader}>
         <div>
@@ -158,159 +108,49 @@ export default function ArchivalVoicePanel({ matchData }: Props) {
         </button>
       </header>
 
-      {/* Tabs */}
-      <div style={tabRow}>
+      {/* Search input */}
+      <div style={searchRow}>
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+          placeholder="search the archival text…"
+          style={input}
+          disabled={!status?.ready}
+        />
         <button
           type="button"
-          style={tab === "auto" ? tabActive : tabInactive}
-          onClick={() => setTab("auto")}
+          onClick={handleSearch}
+          disabled={loading || !status?.ready}
+          style={{
+            ...searchBtn,
+            opacity: loading || !status?.ready ? 0.4 : 1,
+          }}
         >
-          MATCH VOICE
-        </button>
-        <button
-          type="button"
-          style={tab === "manual" ? tabActive : tabInactive}
-          onClick={() => setTab("manual")}
-        >
-          MANUAL SEARCH
+          {loading ? "…" : "SEARCH"}
         </button>
       </div>
 
-      {/* AUTO TAB */}
-      {tab === "auto" && (
-        <div style={resultsArea}>
-          {voiceLoading && (
-            <p style={hintLine}>Retrieving archival text and generating voice…</p>
-          )}
+      {error && <div style={errorLine}>{error}</div>}
 
-          {voiceError && <div style={errorLine}>{voiceError}</div>}
-
-          {!voiceLoading && !voiceResult && !voiceError && (
-            <p style={hintLine}>
-              Capture a face to automatically retrieve archival text and generate a voice response.
-            </p>
-          )}
-
-          {voiceResult && (
-            <>
-              {/* Retrieved excerpts */}
-              {voiceResult.passages.length > 0 && (
-                <div>
-                  <div style={sectionLabel}>RETRIEVED ARCHIVAL TEXT</div>
-                  {voiceResult.query_used && (
-                    <div style={queryUsedLine}>query: "{voiceResult.query_used}"</div>
-                  )}
-                  {voiceResult.passages.map((p, i) => (
-                    <PassageCard key={i} passage={p} />
-                  ))}
-                </div>
-              )}
-
-              {/* Generated voice */}
-              <div style={{ marginTop: 12 }}>
-                <div style={sectionLabel}>GENERATED VOICE</div>
-                <div style={voiceDisclaimer}>{voiceResult.disclaimer}</div>
-                <div style={voiceCard}>
-                  <p style={voiceText}>{voiceResult.generated_text}</p>
-                  <div style={voiceMeta}>
-                    mode: {voiceResult.mode}
-                    {voiceResult.error && ` · error: ${voiceResult.error}`}
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-      )}
-
-      {/* MANUAL TAB */}
-      {tab === "manual" && (
-        <>
-          <div style={searchRow}>
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              placeholder="search the archival text…"
-              style={input}
-              disabled={!status?.ready}
-            />
-            <button
-              type="button"
-              onClick={handleSearch}
-              disabled={manualLoading || !status?.ready}
-              style={{
-                ...searchBtn,
-                opacity: manualLoading || !status?.ready ? 0.4 : 1,
-              }}
-            >
-              {manualLoading ? "…" : "SEARCH"}
-            </button>
-          </div>
-
-          {manualError && <div style={errorLine}>{manualError}</div>}
-
-          <div style={resultsArea}>
-            {manualResults.map((r) => (
-              <ResultCard key={r.id} hit={r} />
-            ))}
-            {!manualError && manualResults.length === 0 && !manualLoading && (
-              <p style={hintLine}>
-                Type a query and press SEARCH to retrieve archival passages.
-              </p>
-            )}
-          </div>
-        </>
-      )}
+      {/* Results */}
+      <div style={resultsArea}>
+        {results.map((r) => (
+          <ResultCard key={r.id} hit={r} />
+        ))}
+        {!error && results.length === 0 && !loading && (
+          <p style={hintLine}>
+            Type a query and press SEARCH to retrieve archival passages.
+          </p>
+        )}
+      </div>
     </section>
   );
 }
 
 // ----------------------------------------------------------------------
-// Passage card (auto-retrieved, shown in auto tab)
-// ----------------------------------------------------------------------
-function PassageCard({ passage }: { passage: VoicePassage }) {
-  const [expanded, setExpanded] = useState(false);
-  const preview =
-    passage.text.length > 280 && !expanded
-      ? passage.text.slice(0, 280).trimEnd() + "…"
-      : passage.text;
-
-  return (
-    <article style={card}>
-      <p
-        style={cardText}
-        onClick={() => setExpanded((v) => !v)}
-        title={expanded ? "Click to collapse" : "Click to expand"}
-      >
-        {preview}
-      </p>
-      <div style={cardMeta}>
-        <span>{passage.source_file}</span>
-        {passage.section && (
-          <>
-            <span>·</span>
-            <span>{passage.section}</span>
-          </>
-        )}
-        {passage.page != null && (
-          <>
-            <span>·</span>
-            <span>page {passage.page}</span>
-          </>
-        )}
-        <span>·</span>
-        <span style={{ color: "var(--color-accent)" }}>
-          score {passage.score.toFixed(2)}
-        </span>
-      </div>
-    </article>
-  );
-}
-
-// ----------------------------------------------------------------------
-// Result card (manual search)
+// Result card
 // ----------------------------------------------------------------------
 function ResultCard({ hit }: { hit: RetrievalHit }) {
   const [expanded, setExpanded] = useState(false);
@@ -350,7 +190,7 @@ function ResultCard({ hit }: { hit: RetrievalHit }) {
 }
 
 // ----------------------------------------------------------------------
-// Styles
+// Styles (inline, matching codebase convention)
 // ----------------------------------------------------------------------
 const collapsedBar: React.CSSProperties = {
   position: "fixed",
@@ -374,9 +214,9 @@ const drawer: React.CSSProperties = {
   position: "fixed",
   right: 16,
   bottom: "calc(16px + var(--safe-bottom))",
-  width: 480,
+  width: 440,
   maxWidth: "calc(100vw - 32px)",
-  height: 540,
+  height: 460,
   maxHeight: "calc(100vh - 32px)",
   display: "flex",
   flexDirection: "column",
@@ -415,35 +255,6 @@ const closeBtn: React.CSSProperties = {
   fontSize: 10,
   padding: "2px 8px",
   cursor: "pointer",
-};
-
-const tabRow: React.CSSProperties = {
-  display: "flex",
-  borderBottom: "1px solid #222",
-};
-
-const tabBase: React.CSSProperties = {
-  flex: 1,
-  padding: "8px 14px",
-  background: "transparent",
-  border: "none",
-  fontFamily: "var(--font-mono)",
-  fontSize: 9,
-  letterSpacing: "0.1em",
-  textTransform: "uppercase",
-  cursor: "pointer",
-};
-
-const tabActive: React.CSSProperties = {
-  ...tabBase,
-  color: "var(--color-accent)",
-  borderBottom: "2px solid var(--color-accent)",
-};
-
-const tabInactive: React.CSSProperties = {
-  ...tabBase,
-  color: "var(--color-text-dim)",
-  borderBottom: "2px solid transparent",
 };
 
 const searchRow: React.CSSProperties = {
@@ -499,60 +310,6 @@ const hintLine: React.CSSProperties = {
   color: "var(--color-text-dim)",
   textAlign: "center",
   marginTop: 20,
-};
-
-const sectionLabel: React.CSSProperties = {
-  fontFamily: "var(--font-mono)",
-  fontSize: 9,
-  letterSpacing: "0.12em",
-  color: "var(--color-accent)",
-  textTransform: "uppercase",
-  marginBottom: 6,
-  paddingBottom: 4,
-  borderBottom: "1px solid #1a1a1a",
-};
-
-const queryUsedLine: React.CSSProperties = {
-  fontFamily: "var(--font-mono)",
-  fontSize: 9,
-  color: "var(--color-text-dim)",
-  marginBottom: 8,
-  fontStyle: "italic",
-};
-
-const voiceDisclaimer: React.CSSProperties = {
-  fontFamily: "var(--font-mono)",
-  fontSize: 9,
-  color: "var(--color-text-dim)",
-  padding: "6px 10px",
-  background: "#0a0a0a",
-  border: "1px solid #1a1a1a",
-  marginBottom: 8,
-  lineHeight: 1.5,
-};
-
-const voiceCard: React.CSSProperties = {
-  border: "1px solid var(--color-accent-dim)",
-  background: "#0d0d0d",
-  padding: "12px 14px",
-};
-
-const voiceText: React.CSSProperties = {
-  margin: 0,
-  fontFamily: "var(--font-serif)",
-  fontSize: 13,
-  lineHeight: 1.55,
-  color: "var(--color-text)",
-  whiteSpace: "pre-wrap",
-};
-
-const voiceMeta: React.CSSProperties = {
-  marginTop: 8,
-  fontFamily: "var(--font-mono)",
-  fontSize: 9,
-  color: "var(--color-text-dim)",
-  textTransform: "uppercase",
-  letterSpacing: "0.04em",
 };
 
 const card: React.CSSProperties = {

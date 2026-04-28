@@ -28,6 +28,59 @@ import numpy as np
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
 
 
+DET_THRESHOLD = 0.35        # lower than live-capture (0.5) — archival images score lower
+MIN_FACE_AREA_FRAC = 0.03   # face bbox must cover ≥3% of image — filters phantom detections
+                             # from checkerboard backgrounds and body-paint patterns
+
+
+def _bbox_area(face) -> float:  # noqa: ANN001
+    x1, y1, x2, y2 = face.bbox
+    return max(0.0, float(x2 - x1)) * max(0.0, float(y2 - y1))
+
+
+def _best_face(faces, img_h: int, img_w: int):
+    """Return the largest face that passes threshold + minimum area, or None.
+
+    These are single-subject portrait photos — the real subject always dominates
+    the frame. Picking the largest valid face handles checkerboard phantoms and
+    incidental multi-detections without skipping the whole image.
+    """
+    min_area = img_h * img_w * MIN_FACE_AREA_FRAC
+    valid = [f for f in faces
+             if float(f.det_score) >= DET_THRESHOLD and _bbox_area(f) >= min_area]
+    if not valid:
+        return None
+    return max(valid, key=_bbox_area)
+
+
+def _detection_variants(bgr: np.ndarray):
+    """Yield (label, 3-channel image) preprocessing strategies in priority order.
+
+    All strategies convert to grayscale first — colour casts (olive, sepia, cyan)
+    from old prints and scans carry no identity info and hurt the detector.
+    Strategies are ordered from least to most aggressive so we stop as early as
+    possible and avoid over-processing images that are already detectable.
+
+    Strategy rationale:
+      bilateral+clahe : default — removes grain, recovers local contrast
+      clahe_only      : skips bilateral in case it blurred fine facial edges
+      strong_clahe    : very flat/faded images need more aggressive stretching
+      histeq          : global equalisation as a last resort for uniformly dark images
+    """
+    gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
+    stack = lambda g: cv2.merge([g, g, g])  # noqa: E731
+
+    clahe_std = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+    clahe_strong = cv2.createCLAHE(clipLimit=6.0, tileGridSize=(4, 4))
+
+    yield "bilateral+clahe", stack(clahe_std.apply(
+        cv2.bilateralFilter(gray, d=9, sigmaColor=75, sigmaSpace=75)
+    ))
+    yield "clahe_only", stack(clahe_std.apply(gray))
+    yield "strong_clahe", stack(clahe_strong.apply(gray))
+    yield "histeq", stack(cv2.equalizeHist(gray))
+
+
 def sha256_file(path: Path) -> str:
     h = hashlib.sha256()
     with open(path, "rb") as f:
@@ -94,20 +147,18 @@ def init_db(db_path: Path) -> sqlite3.Connection:
 
 
 def init_face_engine():
-    """Initialize DeepFace. Returns the DeepFace module or exits."""
+    """Initialize InsightFace FaceAnalysis. Returns the app or exits."""
     try:
-        from deepface import DeepFace  # type: ignore[import-untyped]
-        # Warm up model
-        dummy = np.zeros((64, 64, 3), dtype=np.uint8)
-        try:
-            DeepFace.represent(dummy, model_name="Facenet512",
-                               detector_backend="opencv", enforce_detection=False)
-        except Exception:
-            pass
-        return DeepFace
+        from insightface.app import FaceAnalysis  # type: ignore[import-untyped]
+        app = FaceAnalysis(
+            name="buffalo_l",
+            providers=["CUDAExecutionProvider", "CPUExecutionProvider"],
+        )
+        app.prepare(ctx_id=0, det_size=(640, 640))
+        return app
     except ImportError:
-        print("ERROR: DeepFace is not installed.", file=sys.stderr)
-        print("Install with: pip install deepface tf-keras", file=sys.stderr)
+        print("ERROR: InsightFace is not installed.", file=sys.stderr)
+        print("Install with: pip install insightface onnxruntime", file=sys.stderr)
         sys.exit(1)
 
 
@@ -185,48 +236,31 @@ def ingest(
             skipped += 1
             continue
 
-        # Detect faces + extract embedding via DeepFace
-        try:
-            results = face_app.represent(
-                bgr,
-                model_name="Facenet512",
-                detector_backend="opencv",
-                enforce_detection=True,
-            )
-        except ValueError:
+        # Try each preprocessing strategy; stop at first that finds a valid face
+        face = None
+        strategy_used = "-"
+        for label, processed in _detection_variants(bgr):
+            face = _best_face(face_app.get(processed), h, w)
+            if face is not None:
+                strategy_used = label
+                break
+
+        if face is None:
             print("SKIP (no face)")
             skipped += 1
             continue
 
-        if len(results) == 0:
-            print("SKIP (no face)")
-            skipped += 1
-            continue
+        det_score = float(face.det_score)
 
-        if len(results) > 1:
-            print(f"SKIP ({len(results)} faces)")
-            skipped += 1
-            continue
+        # BBox: InsightFace returns [x1, y1, x2, y2] — convert to (x, y, w, h)
+        x1, y1, x2, y2 = face.bbox.astype(float)
+        bbox_x, bbox_y = x1, y1
+        bbox_w, bbox_h = x2 - x1, y2 - y1
 
-        face = results[0]
-        det_score = float(face.get("face_confidence", 0.0))
-        if det_score < 0.5:
-            print(f"SKIP (low confidence {det_score:.2f})")
-            skipped += 1
-            continue
-
-        # Bounding box
-        region = face.get("facial_area", {})
-        bbox_x = float(region.get("x", 0))
-        bbox_y = float(region.get("y", 0))
-        bbox_w = float(region.get("w", 0))
-        bbox_h = float(region.get("h", 0))
-
-        # Embedding (L2 normalize)
-        embedding = np.array(face["embedding"], dtype=np.float32)
-        norm = np.linalg.norm(embedding)
-        if norm > 0:
-            embedding = embedding / norm
+        # Embedding — L2 normalize (norm encodes quality, model is AdaFace-aware)
+        raw_embedding = np.array(face.embedding, dtype=np.float32)
+        norm = np.linalg.norm(raw_embedding)
+        embedding = raw_embedding / norm if norm > 0 else raw_embedding
         embedding_blob = embedding.tobytes()
 
         # File hash
@@ -253,7 +287,7 @@ def ingest(
             )
             conn.commit()
             faces_found += 1
-            print(f"OK (score={det_score:.2f})")
+            print(f"OK (score={det_score:.2f}, prep={strategy_used})")
         except Exception as exc:
             print(f"ERROR ({exc})")
             errors += 1

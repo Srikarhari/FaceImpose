@@ -7,6 +7,15 @@ interface Props {
 
 const BASE = import.meta.env.VITE_API_URL ?? "";
 
+// Cross-platform basename: takes a path stored as POSIX in the DB
+// (e.g. "test_collection/12 _Biala_, …png") and returns just the
+// final segment.
+function basename(path: string): string {
+  if (!path) return "";
+  const slash = path.lastIndexOf("/");
+  return slash >= 0 ? path.slice(slash + 1) : path;
+}
+
 export default function TwinPanel({ twin, visible }: Props) {
   return (
     <div style={container}>
@@ -29,14 +38,23 @@ export default function TwinPanel({ twin, visible }: Props) {
                 <span style={emotionBadge}>{twin.dominant_emotion.toUpperCase()}</span>
               )}
             </p>
-            {twin.generated_caption && (
-              <p style={title}>{twin.generated_caption}</p>
+            {twin.filename && (
+              <p style={filenameLine} title={twin.filename}>
+                {basename(twin.filename)}
+              </p>
+            )}
+            {twin.metadata.title && (
+              <p style={title}>{twin.metadata.title}</p>
             )}
             {twin.original_caption && (
               <p style={caption}>{twin.original_caption}</p>
             )}
+            <p style={generatedCaption}>{twin.generated_caption}</p>
             {twin.metadata.date_text && (
               <p style={metaLine}>{twin.metadata.date_text}</p>
+            )}
+            {twin.metadata.source_collection && (
+              <p style={metaLine}>{twin.metadata.source_collection}</p>
             )}
           </div>
         </div>
@@ -99,27 +117,36 @@ const scoreRow: React.CSSProperties = {
 
 const scoreBadge: React.CSSProperties = {
   fontFamily: "var(--font-mono)",
-  fontSize: 11,
+  fontSize: 10,
   letterSpacing: "0.08em",
-  padding: "3px 8px",
-  border: "2px solid var(--color-accent)",
+  padding: "2px 6px",
+  border: "1px solid var(--color-accent-dim)",
   color: "var(--color-accent)",
 };
 
 const emotionBadge: React.CSSProperties = {
   fontFamily: "var(--font-mono)",
-  fontSize: 11,
+  fontSize: 10,
   letterSpacing: "0.08em",
-  padding: "3px 8px",
-  border: "2px solid #555",
+  padding: "2px 6px",
+  border: "1px solid #444",
   color: "var(--color-text-dim)",
 };
 
 const scoreValue: React.CSSProperties = {
   fontFamily: "var(--font-mono)",
-  fontSize: 14,
-  fontWeight: "bold",
-  color: "var(--color-text)",
+  fontSize: 12,
+  color: "var(--color-text-dim)",
+};
+
+const filenameLine: React.CSSProperties = {
+  fontFamily: "var(--font-mono)",
+  fontSize: 10,
+  letterSpacing: "0.04em",
+  color: "var(--color-text-dim)",
+  margin: 0,
+  wordBreak: "break-all",
+  lineHeight: 1.4,
 };
 
 const title: React.CSSProperties = {
@@ -134,6 +161,16 @@ const caption: React.CSSProperties = {
   fontSize: 12,
   lineHeight: 1.5,
   color: "var(--color-text-dim)",
+};
+
+const generatedCaption: React.CSSProperties = {
+  fontFamily: "var(--font-serif)",
+  fontSize: 13,
+  lineHeight: 1.6,
+  color: "var(--color-text)",
+  borderLeft: "2px solid var(--color-accent-dim)",
+  paddingLeft: 12,
+  marginTop: 4,
 };
 
 const metaLine: React.CSSProperties = {

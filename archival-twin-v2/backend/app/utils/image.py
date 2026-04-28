@@ -1,4 +1,4 @@
-"""Image utilities: base64 decode, format conversion, resize."""
+"""Image utilities: base64 decode, format conversion, resize, preprocessing."""
 
 import base64
 
@@ -41,3 +41,16 @@ def resize_for_detection(image: np.ndarray, max_dim: int = 1280) -> np.ndarray:
     scale = max_dim / max(h, w)
     new_w, new_h = int(w * scale), int(h * scale)
     return cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_AREA)
+
+
+def enhance_contrast(image_bgr: np.ndarray) -> np.ndarray:
+    """Apply CLAHE to the luminance channel (LAB) to normalise contrast across lighting conditions.
+
+    Applied to live captures before embedding — reduces sensitivity to harsh/flat lighting
+    without discarding colour information.
+    """
+    lab = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2LAB)
+    l_ch, a_ch, b_ch = cv2.split(lab)
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    enhanced = cv2.merge([clahe.apply(l_ch), a_ch, b_ch])
+    return cv2.cvtColor(enhanced, cv2.COLOR_LAB2BGR)

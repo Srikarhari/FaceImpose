@@ -1,7 +1,7 @@
-"""Degraded-mode stub when DeepFace is unavailable.
+"""Degraded-mode stub when InsightFace is unavailable.
 
 This is NOT a silent fallback. All match requests return a clear 503
-directing the operator to install DeepFace.
+directing the operator to install InsightFace.
 """
 
 import numpy as np
@@ -30,6 +30,6 @@ class FaceEngineStub:
 
     def detect_and_embed(self, image_rgb: np.ndarray) -> None:
         raise FaceEngineUnavailable(
-            "Face engine is not available. DeepFace is not installed or failed to load. "
-            "Install with: pip install deepface tf-keras"
+            "Face engine is not available. InsightFace is not installed or failed to load. "
+            "Install with: pip install insightface onnxruntime"
         )

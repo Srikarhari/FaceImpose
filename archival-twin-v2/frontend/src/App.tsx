@@ -1,25 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
 import SplitScreen from "./components/SplitScreen";
+import ArchivalVoicePanel from "./components/ArchivalVoicePanel";
 import { useCamera } from "./hooks/useCamera";
 import { useMatch } from "./hooks/useMatch";
-import { useVoice } from "./hooks/useVoice";
 import { getHealth } from "./api/client";
 
 export default function App() {
-  const {
-    videoRef,
-    ready: cameraReady,
-    error: cameraError,
-    starting: cameraStarting,
-    start: startCamera,
-    captureFrame,
-  } = useCamera();
+  const { videoRef, ready: cameraReady, error: cameraError, captureFrame } = useCamera();
   const { state: matchState, runMatch, reset } = useMatch();
   const [backendStatus, setBackendStatus] = useState<string>("checking");
 
-  const matchData = matchState.phase === "matched" ? matchState.data : null;
-  const { voiceResult, voiceLoading, voiceError, resetVoice } = useVoice(matchData);
-
+  // Check backend health on mount
   useEffect(() => {
     let cancelled = false;
     async function check() {
@@ -39,25 +30,18 @@ export default function App() {
     if (frame) runMatch(frame);
   }, [captureFrame, runMatch]);
 
-  const handleReset = useCallback(() => {
-    reset();
-    resetVoice();
-  }, [reset, resetVoice]);
-
   return (
-    <SplitScreen
-      videoRef={videoRef}
-      cameraReady={cameraReady}
-      cameraError={cameraError}
-      cameraStarting={cameraStarting}
-      onStartCamera={startCamera}
-      matchState={matchState}
-      backendStatus={backendStatus}
-      onCapture={handleCapture}
-      onReset={handleReset}
-      voiceResult={voiceResult}
-      voiceLoading={voiceLoading}
-      voiceError={voiceError}
-    />
+    <>
+      <SplitScreen
+        videoRef={videoRef}
+        cameraReady={cameraReady}
+        cameraError={cameraError}
+        matchState={matchState}
+        backendStatus={backendStatus}
+        onCapture={handleCapture}
+        onReset={reset}
+      />
+      <ArchivalVoicePanel />
+    </>
   );
 }

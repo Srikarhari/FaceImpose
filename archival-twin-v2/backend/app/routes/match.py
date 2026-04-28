@@ -23,7 +23,7 @@ from app.models.schemas import (
 from app.services.caption_generator import generate_caption, get_disclosure_text
 from app.services.face_engine import MultipleFacesDetected, NoFaceDetected
 from app.services.face_engine_stub import FaceEngineUnavailable
-from app.utils.image import ImageDecodeError, bgr_to_rgb, decode_base64_image, resize_for_detection
+from app.utils.image import ImageDecodeError, bgr_to_rgb, decode_base64_image, enhance_contrast, resize_for_detection
 from app.utils.timing import StageTimer
 
 logger = logging.getLogger(__name__)
@@ -53,8 +53,8 @@ async def post_match(req: MatchRequest):
             content=MatchError(
                 error="engine_unavailable",
                 detail=(
-                    "Face engine is not available. DeepFace is not installed or failed to load. "
-                    "Install with: pip install deepface tf-keras"
+                    "Face engine is not available. InsightFace is not installed or failed to load. "
+                    "Install with: pip install insightface onnxruntime"
                 ),
             ).model_dump(),
         )
@@ -70,7 +70,7 @@ async def post_match(req: MatchRequest):
         )
 
     # --- Detect face + extract embedding ---
-    image_rgb = bgr_to_rgb(resize_for_detection(image_bgr))
+    image_rgb = bgr_to_rgb(enhance_contrast(resize_for_detection(image_bgr)))
 
     try:
         with timer.measure("face_detected"):

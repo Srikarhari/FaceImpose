@@ -1,5 +1,7 @@
 """SQLite connection management via aiosqlite."""
 
+from typing import Optional
+
 import aiosqlite
 
 from app.config import settings
@@ -59,7 +61,7 @@ CREATE TABLE IF NOT EXISTS match_log (
 );
 """
 
-_db: aiosqlite.Connection | None = None
+_db: Optional[aiosqlite.Connection] = None
 
 
 async def get_db() -> aiosqlite.Connection:
